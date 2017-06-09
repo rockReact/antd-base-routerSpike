@@ -1,95 +1,47 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { DatePicker, message, Icon } from 'antd';
+import React from 'react'
+import ReactDOM from 'react-dom'
 
-import PropTypes from 'prop-types';
+import { createStore, combineReducers, applyMiddleware } from 'redux'
+import { Provider } from 'react-redux'
 
+import createHistory from 'history/createBrowserHistory'
+import { Route } from 'react-router'
 
-import Pagination from './pagination/Pagination';
-import Table from './table/table';
+import { ConnectedRouter, routerReducer, routerMiddleware, push } from 'react-router-redux'
 
-import 'babel-polyfill';
-import { render } from 'react-dom';
-import { Provider } from 'react-redux';
-import App from './sliceList/containers/App';
-import configureStore from './sliceList/store/configureStore';
+import reducers from './routerSpike/reducers' // Or wherever you keep your reducers
 
-const store = configureStore();
+// Create a history of your choosing (we're using a browser history in this case)
+const history = createHistory()
 
-render(
+// Build the middleware for intercepting and dispatching navigation actions
+const middleware = routerMiddleware(history)
+
+// Add the reducer to your store on the `router` key
+// Also apply our middleware for navigating
+const store = createStore(
+  combineReducers({
+    ...reducers,
+    router: routerReducer
+  }),
+  applyMiddleware(middleware)
+)
+
+// Now you can dispatch navigation actions from anywhere!
+// store.dispatch(push('/foo'))
+
+import {Main, ModuleA, moduleB} from './routerSpike/containers';
+
+ReactDOM.render(
   <Provider store={store}>
-    <App />
+    { /* ConnectedRouter will use the store from Provider automatically */ }
+    <ConnectedRouter history={history}>
+      <div>
+        <Route exact path="/" component={Main}/>
+        <Route path="/moduleA" component={ModuleA}/>
+        <Route path="/moduleB" component={moduleB}/>
+      </div>
+    </ConnectedRouter>
   </Provider>,
   document.getElementById('root')
-);
-
-
-/*
-
-/*
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    const defaultCurrent = 2;
-
-    this.state = {
-      date: '',
-      selectedRowKeys: [],  // Check here to configure the default column
-      loading: false,
-      pageNumber: defaultCurrent
-    }
-  }
-
-  handleChange(date) {
-    message.info('您选择的日期是: ' + date.toString());
-    this.setState({ date });
-  }
-
-  onSelectChange = (selectedRowKeys) => {
-    console.log('selectedRowKeys changed: ', selectedRowKeys);
-    this.setState({ selectedRowKeys });
-  }
-
-  onPagination = (argus) => {
-    console.log('onPagination ', argus, this, this.state.pageNumber );
-    this.setState({pageNumber: argus});
-    console.log('onPagination2 ', argus, this, this.state.pageNumber );
-  }
-
-  render() {
-
-    const { loading, selectedRowKeys } = this.state;
-
-    const hasSelected = selectedRowKeys.length > 0;
-
-    // const rowSelection = {
-    //   onChange: (selectedRowKeys, selectedRows) => {console.log('onChange;')
-    //     console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
-    //   },
-    //   // on fire twice when first load
-    //XXXXX
-    //   getCheckboxProps: record => ({
-    //     disabled: record.name === 'Disabled User',    // Column configuration not to be checked
-    //   }),
-    // };
-
-    const onShowSizeChange = (current, pageSize) => {
-      console.log(current, pageSize);
-    }
-
-    return (
-      <div style={{ width: 700, margin: '100px auto' }}>
-        <DatePicker onChange={value => this.handleChange(value)} />
-        <div style={{ marginTop: 20 }}>当前日期：{this.state.date.toString()}</div>
-        <Table />
-
-        <Pagination onPagination={this.onPagination.bind(this)} defaultCurrent={this.state.pageNumber} total={50} />
-
-      </div>
-    );
-  }
-}
-
-
-ReactDOM.render(<App />, document.getElementById('root'));
-*/
+)
